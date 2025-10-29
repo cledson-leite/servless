@@ -1,0 +1,13 @@
+manter o docker aberto!
+
+cdk init --language typescript
+
+cdk list
+
+cdk deploy --all
+
+cdk diff
+
+cdk destroy --all
+
+
