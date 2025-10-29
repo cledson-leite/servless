@@ -2,6 +2,8 @@ manter o docker aberto!
 
 cdk init --language typescript
 
+cdk bootstrap (execute uma unica vez para criar o sistema na aws)
+
 cdk list
 
 cdk deploy --all
