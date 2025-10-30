@@ -31,6 +31,7 @@ const servlessApiStack = new ServlessApiStack(
     env,
     tags,
     productsFetchHandler: productsAppStack.productsFetchHandler,
+    productsAdminHandler: productsAppStack.productsAdminHandler,
   }
 );
 

@@ -12,10 +12,16 @@ export async function handler(
 
   const method = event.httpMethod;
   if(event.resource === '/products' && method === 'GET') {
-    console.log('Getting all products');
     return {
       statusCode: 200,
       body: JSON.stringify({ message: 'Fetched all products' }),
+    };
+  }
+  if(event.resource === '/products/{id}' && method === 'GET') {
+    const productId = event.pathParameters!.id;
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: `GET /products/${productId}` }),
     };
   }
   return {

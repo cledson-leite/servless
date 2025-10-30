@@ -6,6 +6,7 @@ import { Construct } from 'constructs';
 
 interface ServlessApiStackProps extends cdk.StackProps {
   productsFetchHandler: lambdaNodeJs.NodejsFunction;
+  productsAdminHandler: lambdaNodeJs.NodejsFunction;
 }
 
 export class ServlessApiStack extends cdk.Stack {
@@ -42,7 +43,15 @@ export class ServlessApiStack extends cdk.Stack {
       }
     )
     const productsFetchIntegration = new apigateway.LambdaIntegration(props.productsFetchHandler)
+    const productsAdminIntegration = new apigateway.LambdaIntegration(props.productsAdminHandler)
+
     const productsResource = api.root.addResource('products')
     productsResource.addMethod('GET', productsFetchIntegration)
+    productsResource.addMethod('POST', productsAdminIntegration)
+
+    const productIDResource = productsResource.addResource('{id}')
+    productIDResource.addMethod('GET', productsFetchIntegration)
+    productIDResource.addMethod('PUT', productsAdminIntegration)
+    productIDResource.addMethod('DELETE', productsAdminIntegration)
   }
 }

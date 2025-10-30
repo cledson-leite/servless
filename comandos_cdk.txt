@@ -7,6 +7,7 @@ cdk bootstrap (execute uma unica vez para criar o sistema na aws)
 cdk list
 
 cdk deploy --all
+cdk deploy --all --require-approval never
 
 cdk diff
 
