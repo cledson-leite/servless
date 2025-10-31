@@ -2,6 +2,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { ProductsAppStack } from '../lib/productsApp-stack';
 import { ServlessApiStack } from '../lib/servlessApi-stack';
+import { ProductsAppLayersStack } from '../lib/productsAppLayers-stack';
 
 const app = new cdk.App();
 
@@ -15,6 +16,15 @@ const tags = {
   team: 'Eu mesmo'
 }
 
+const productsAppLayersStack = new ProductsAppLayersStack(
+  app,
+  'ProductsAppLayersStackIndentifier',
+  {
+    env,
+    tags,
+  }
+);
+
 const productsAppStack = new ProductsAppStack(
   app,
   'ProductsAppStackIndentifier',
@@ -23,6 +33,8 @@ const productsAppStack = new ProductsAppStack(
     tags,
   }
 );
+
+productsAppStack.addDependency(productsAppLayersStack);
 
 const servlessApiStack = new ServlessApiStack(
   app,
