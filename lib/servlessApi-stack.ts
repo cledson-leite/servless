@@ -24,7 +24,11 @@ export class ServlessApiStack extends cdk.Stack {
       'ServlessApiIdentifier',
       {
         restApiName: 'ServlessApi',
+        cloudWatchRole: true,
         deployOptions: {
+          tracingEnabled: true,
+          metricsEnabled: true,
+          loggingLevel: apigateway.MethodLoggingLevel.INFO,
           accessLogDestination:
             new apigateway.LogGroupLogDestination(logGroup),
           accessLogFormat: apigateway.AccessLogFormat

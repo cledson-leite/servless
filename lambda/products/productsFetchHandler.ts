@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import {DynamoDB} from "aws-sdk";
+import { DynamoDB } from "aws-sdk";
 import { ProductRepository } from "/opt/nodejs/productsLayer";
 
 const productTableName = process.env.PRODUCTS_TABLE_NAME!;
-const DynamoDBClient = new DynamoDB.DocumentClient()
+const DynamoDBClient = new DynamoDB.DocumentClient();
 
 const productRepository = new ProductRepository(DynamoDBClient, productTableName);
 
