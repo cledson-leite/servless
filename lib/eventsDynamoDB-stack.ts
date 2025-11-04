@@ -8,11 +8,12 @@ export class EventsDynamoDBStack extends cdk.Stack {
     super(scope, id, props);
 
     this.table = new dynamodb.Table(this, 'EventsDymanoIdentifier', {
+      tableName: 'EVENTS',
       partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       timeToLiveAttribute: 'ttl',
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      billingMode: dynamodb.BillingMode.PROVISIONED,
       readCapacity: 1,
       writeCapacity: 1,
     });

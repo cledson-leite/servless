@@ -3,6 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import { ProductsAppStack } from '../lib/productsApp-stack';
 import { ServlessApiStack } from '../lib/servlessApi-stack';
 import { ProductsAppLayersStack } from '../lib/productsAppLayers-stack';
+import { EventsDynamoDBStack } from '../lib/eventsDynamoDB-stack';
 
 const app = new cdk.App();
 
@@ -25,16 +26,27 @@ const productsAppLayersStack = new ProductsAppLayersStack(
   }
 );
 
-const productsAppStack = new ProductsAppStack(
+const eventsDynamoDBStack = new EventsDynamoDBStack(
   app,
-  'ProductsAppStackIndentifier',
+  'EventsDynamoDBStackIndentifier',
   {
     env,
     tags,
   }
 );
 
+const productsAppStack = new ProductsAppStack(
+  app,
+  'ProductsAppStackIndentifier',
+  {
+    eventsDynamoDBTable: eventsDynamoDBStack.table,
+    env,
+    tags,
+  }
+);
+
 productsAppStack.addDependency(productsAppLayersStack);
+productsAppStack.addDependency(eventsDynamoDBStack);
 
 const servlessApiStack = new ServlessApiStack(
   app,
