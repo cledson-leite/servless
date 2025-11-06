@@ -101,6 +101,7 @@ function sendProductEvent(
   return lambdaClient.invoke({
     FunctionName: productEventsFunctionName,
     Payload: JSON.stringify(event),
-    InvocationType: 'RequestResponse', // Synchronous invocation
+    // InvocationType: 'RequestResponse', // Synchronous invocation
+    InvocationType: 'Event', // Asynchronous invocation
   }).promise();
 }
