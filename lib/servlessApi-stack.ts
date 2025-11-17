@@ -7,6 +7,7 @@ import { Construct } from 'constructs';
 interface ServlessApiStackProps extends cdk.StackProps {
   productsFetchHandler: lambdaNodeJs.NodejsFunction;
   productsAdminHandler: lambdaNodeJs.NodejsFunction;
+  ordersHandler: lambdaNodeJs.NodejsFunction;
 }
 
 export class ServlessApiStack extends cdk.Stack {
@@ -46,16 +47,51 @@ export class ServlessApiStack extends cdk.Stack {
         },
       }
     )
-    const productsFetchIntegration = new apigateway.LambdaIntegration(props.productsFetchHandler)
-    const productsAdminIntegration = new apigateway.LambdaIntegration(props.productsAdminHandler)
+    this.createProductService(props, api);
+    this.createOrderService(props, api);
+  }
 
-    const productsResource = api.root.addResource('products')
-    productsResource.addMethod('GET', productsFetchIntegration)
-    productsResource.addMethod('POST', productsAdminIntegration)
+  private createOrderService(props: ServlessApiStackProps, api: apigateway.RestApi) {
+    const orderIntegration = new apigateway.LambdaIntegration(props.ordersHandler);
 
-    const productIDResource = productsResource.addResource('{id}')
-    productIDResource.addMethod('GET', productsFetchIntegration)
-    productIDResource.addMethod('PUT', productsAdminIntegration)
-    productIDResource.addMethod('DELETE', productsAdminIntegration)
+    //resource ORDER
+    const ordersResource = api.root.addResource('orders');
+
+    //POST /orders
+    ordersResource.addMethod('POST', orderIntegration);
+
+    //GET /orders
+    //GET /orders?email={email}
+    //GET /orders?email={email}&orderId={orderId}
+    ordersResource.addMethod('GET', orderIntegration);
+
+    const orderDeletionValidator = new apigateway.RequestValidator(this, 'OrderDeletionValidatorIdentifier', {
+      restApi: api,
+      requestValidatorName: 'OrderDeletionValidator',
+      validateRequestParameters: true,
+    });
+
+    //DELETE /orders?email={email}&orderId={orderId}
+    ordersResource.addMethod('DELETE', orderIntegration, {
+      requestParameters: {
+        'method.request.querystring.email': true,
+        'method.request.querystring.orderId': true,
+      },
+      requestValidator: orderDeletionValidator,
+    });
+  }
+
+  private createProductService(props: ServlessApiStackProps, api: apigateway.RestApi) {
+    const productsFetchIntegration = new apigateway.LambdaIntegration(props.productsFetchHandler);
+    const productsAdminIntegration = new apigateway.LambdaIntegration(props.productsAdminHandler);
+
+    const productsResource = api.root.addResource('products');
+    productsResource.addMethod('GET', productsFetchIntegration);
+    productsResource.addMethod('POST', productsAdminIntegration);
+
+    const productIDResource = productsResource.addResource('{id}');
+    productIDResource.addMethod('GET', productsFetchIntegration);
+    productIDResource.addMethod('PUT', productsAdminIntegration);
+    productIDResource.addMethod('DELETE', productsAdminIntegration);
   }
 }

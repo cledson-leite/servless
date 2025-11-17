@@ -4,6 +4,8 @@ import { ProductsAppStack } from '../lib/productsApp-stack';
 import { ServlessApiStack } from '../lib/servlessApi-stack';
 import { ProductsAppLayersStack } from '../lib/productsAppLayers-stack';
 import { EventsDynamoDBStack } from '../lib/eventsDynamoDB-stack';
+import { OrdersAppLayersStack } from '../lib/ordersAppLayers-stack';
+import { OrdersAppStack } from '../lib/ordersApp-stack';
 
 const app = new cdk.App();
 
@@ -48,6 +50,27 @@ const productsAppStack = new ProductsAppStack(
 productsAppStack.addDependency(productsAppLayersStack);
 productsAppStack.addDependency(eventsDynamoDBStack);
 
+const ordersAppLayersStack = new OrdersAppLayersStack(
+  app,
+  'OrdersAppLayersStackIndentifier',
+  {
+    env,
+    tags,
+  }
+);
+
+const ordersAppStack = new OrdersAppStack(
+  app,
+  'OrdersAppStackIndentifier',
+  {
+    productsTable: productsAppStack.productsTable,
+    env,
+    tags,
+  }
+);
+ordersAppStack.addDependency(productsAppStack);
+ordersAppStack.addDependency(ordersAppLayersStack);
+
 const servlessApiStack = new ServlessApiStack(
   app,
   'ServlessApiStackIndentifier',
@@ -56,7 +79,8 @@ const servlessApiStack = new ServlessApiStack(
     tags,
     productsFetchHandler: productsAppStack.productsFetchHandler,
     productsAdminHandler: productsAppStack.productsAdminHandler,
+    ordersHandler: ordersAppStack.ordersHandler,
   }
 );
-
 servlessApiStack.addDependency(productsAppStack);
+servlessApiStack.addDependency(ordersAppStack);

@@ -32,6 +32,12 @@
       "/opt/nodejs/productEventsLayer": [
         "lambda/products/layers/productEventsLayer/nodejs/productEvents"
       ],
+      "/opt/nodejs/ordersLayer": [
+        "lambda/orders/layers/ordersLayer/nodejs/orderRepository"
+      ],
+      "/opt/nodejs/orderApiLayer": [
+        "lambda/orders/layers/orderApiLayer/nodejs/orderApi"
+      ],
     }
   },
   "exclude": [
