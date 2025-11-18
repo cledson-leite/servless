@@ -57,8 +57,54 @@ export class ServlessApiStack extends cdk.Stack {
     //resource ORDER
     const ordersResource = api.root.addResource('orders');
 
+    const orderRequestValidator = new apigateway.RequestValidator(this, 'OrderRequestValidatorIdentifier', {
+      restApi: api,
+      requestValidatorName: 'OrderRequestValidator',
+      validateRequestBody: true,
+    });
+
+    const orderModel = new apigateway.Model(this,'OrderModelIdentifier', {
+      modelName: 'OrderModel',
+      restApi: api,
+      contentType: 'application/json',
+      schema: {
+        type: apigateway.JsonSchemaType.OBJECT,
+        properties: {
+          email: { type: apigateway.JsonSchemaType.STRING },
+          productsIds: {
+            type: apigateway.JsonSchemaType.ARRAY,
+            minItems: 1,
+            items: { type: apigateway.JsonSchemaType.STRING },
+          },
+          payment: {
+            type: apigateway.JsonSchemaType.STRING,
+            enum: ['CASH', 'DEBIT_CARD', 'CREDIT_CARD'],
+          },
+          shipping: {
+            type: apigateway.JsonSchemaType.OBJECT,
+            properties: {
+              type: {
+                type: apigateway.JsonSchemaType.STRING,
+                enum: ['ECONOMIC', 'URGENT'],
+              },
+              carrier: {
+                type: apigateway.JsonSchemaType.STRING,
+                enum: ['CORREIO', 'FEDEX'],
+              },
+	          }
+          },
+        },
+        required: ['email', 'productsIds', 'payment'],
+      },
+    });
+
     //POST /orders
-    ordersResource.addMethod('POST', orderIntegration);
+    ordersResource.addMethod('POST', orderIntegration, {
+      requestValidator: orderRequestValidator,
+      requestModels: {
+        'application/json': orderModel,
+      },
+    });
 
     //GET /orders
     //GET /orders?email={email}
@@ -87,11 +133,47 @@ export class ServlessApiStack extends cdk.Stack {
 
     const productsResource = api.root.addResource('products');
     productsResource.addMethod('GET', productsFetchIntegration);
-    productsResource.addMethod('POST', productsAdminIntegration);
+
+    const productRequestValidator = new apigateway.RequestValidator(
+      this,
+      'ProductRequestValidatorIdentifier',
+      {
+        restApi: api,
+        requestValidatorName: 'ProductRequestValidator',
+        validateRequestBody: true,
+      }
+    );
+    const productModel = new apigateway.Model(this,'ProductModelIdentifier', {
+      modelName: 'ProductModel',
+      restApi: api,
+      contentType: 'application/json',
+      schema: {
+        type: apigateway.JsonSchemaType.OBJECT,
+        properties: {
+          productName: { type: apigateway.JsonSchemaType.STRING },
+          code: { type: apigateway.JsonSchemaType.STRING },
+          price: { type: apigateway.JsonSchemaType.NUMBER },
+          model: { type: apigateway.JsonSchemaType.STRING },
+          productUrl: { type: apigateway.JsonSchemaType.STRING },
+        },
+        required: ['productName', 'code', 'price', 'model', 'productUrl'],
+      },
+    });
+    productsResource.addMethod('POST', productsAdminIntegration, {
+      requestValidator: productRequestValidator,
+      requestModels: {
+        'application/json': productModel,
+      },
+    });
 
     const productIDResource = productsResource.addResource('{id}');
     productIDResource.addMethod('GET', productsFetchIntegration);
-    productIDResource.addMethod('PUT', productsAdminIntegration);
+    productIDResource.addMethod('PUT', productsAdminIntegration, {
+      requestValidator: productRequestValidator,
+      requestModels: {
+        'application/json': productModel,
+      },
+    });
     productIDResource.addMethod('DELETE', productsAdminIntegration);
   }
 }
