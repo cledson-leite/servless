@@ -38,6 +38,9 @@
       "/opt/nodejs/orderApiLayer": [
         "lambda/orders/layers/orderApiLayer/nodejs/orderApi"
       ],
+      "/opt/nodejs/orderEventsLayer": [
+        "lambda/orders/layers/orderEventsLayer/nodejs/orderEvents"
+      ],
     }
   },
   "exclude": [

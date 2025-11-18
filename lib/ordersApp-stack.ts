@@ -3,6 +3,8 @@ import * as lambdaNodeJs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 
 interface OrdersAppStackProps extends cdk.StackProps {
@@ -44,6 +46,16 @@ export class OrdersAppStack extends cdk.Stack {
       ordersApiLayerArn
     )
 
+    const orderEventsLayerArn = ssm.StringParameter.valueForStringParameter(
+      this,
+      'OrderEventsLayerVersionArn'
+    )
+    const orderEventsLayer = lambda.LayerVersion.fromLayerVersionArn(
+      this,
+      'OrderEventsLayerIdentifier',
+      orderEventsLayerArn
+    )
+
     const productsLayerArn = ssm.StringParameter.valueForStringParameter(
       this,
       'ProductsLayerVersionArn'
@@ -53,6 +65,11 @@ export class OrdersAppStack extends cdk.Stack {
       'ProductsLayerIdentifitier',
       productsLayerArn
     )
+
+    const orderNotificationTopic = new sns.Topic(this, 'OrderNotificationTopicIdentifier', {
+      displayName: 'Order Notification Topic',
+      topicName: 'OrderNotificationTopic',
+    });
 
     this.ordersHandler = new lambdaNodeJs.NodejsFunction(this, 'OrdersHandlerIdentifier', {
       functionName: 'OrdersHandler',
@@ -68,12 +85,14 @@ export class OrdersAppStack extends cdk.Stack {
       environment: {
         PRODUCTS_TABLE_NAME: props.productsTable.tableName,
         ORDERS_TABLE_NAME: orderTable.tableName,
+        ORDER_NOTIFICATION_TOPIC_ARN: orderNotificationTopic.topicArn,
       },
-      layers: [productsLayer, ordersLayer, ordersApiLayer],
+      layers: [productsLayer, ordersLayer, ordersApiLayer, orderEventsLayer],
       tracing: lambda.Tracing.ACTIVE,
       insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
     })
     props.productsTable.grantReadData(this.ordersHandler);
     orderTable.grantReadWriteData(this.ordersHandler);
+    orderNotificationTopic.grantPublish(this.ordersHandler);
   }
 }

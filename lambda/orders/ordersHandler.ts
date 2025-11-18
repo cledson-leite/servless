@@ -1,13 +1,16 @@
-import { DynamoDB } from "aws-sdk";
+import { DynamoDB, SNS } from "aws-sdk";
 import { Order, OrderRepository } from "/opt/nodejs/ordersLayer";
 import { Product, ProductRepository } from "/opt/nodejs/productsLayer";
+import { OrderEvent, OrderEventData, OrderEventType } from "/opt/nodejs/orderEventsLayer";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { CarrierType, OrderProductResponse, OrderResponse, OrderResquest, PaymentType, ShippingType } from "/opt/nodejs/orderApiLayer";
 
 const ordersTable = process.env.ORDERS_TABLE_NAME!;
 const productsTable = process.env.PRODUCTS_TABLE_NAME!;
+const orderNotificationTopicArn = process.env.ORDER_NOTIFICATION_TOPIC_ARN!;
 
 const dynamoDb = new DynamoDB.DocumentClient();
+const sns = new SNS();
 
 const orderRepository = new OrderRepository(ordersTable, dynamoDb);
 const productRepository = new ProductRepository(dynamoDb, productsTable);
@@ -83,6 +86,15 @@ async function handleCreateOrder(event: APIGatewayProxyEvent, context: Context):
   };
   const orderToCreate = buildOrder(orderRequest, products);
   const createdOrder = await orderRepository.createOrder(orderToCreate);
+  const eventResult = await publishOrderEvent(
+    OrderEventType.ORDER_CREATED,
+    createdOrder,
+    context.awsRequestId
+  );
+  console.log(
+    `Event created and sent with orderID: ${createdOrder.sk}
+      with messageID ${eventResult.MessageId} from request ${context.awsRequestId}`
+  )
   const orderResponse = mapperOrderToOrderResponse(createdOrder);
 
   return {
@@ -96,6 +108,15 @@ async function handleDeleteOrder(event: APIGatewayProxyEvent, context: Context):
     const email = event.queryStringParameters!.email!;
     const orderId = event.queryStringParameters!.orderId!;
     const deletedOrder = await orderRepository.deleteOrder(email, orderId);
+    const eventResult = await publishOrderEvent(
+    OrderEventType.ORDER_DELETED,
+    deletedOrder,
+    context.awsRequestId
+  );
+  console.log(
+    `Event deleted and sent with orderID: ${deletedOrder.sk}
+      with messageID ${eventResult.MessageId} from request ${context.awsRequestId}`
+  )
     const orderResponse = mapperOrderToOrderResponse(deletedOrder);
 
     return {
@@ -110,6 +131,31 @@ async function handleDeleteOrder(event: APIGatewayProxyEvent, context: Context):
       body: JSON.stringify({ message }),
     };
   }
+}
+
+function publishOrderEvent(eventType: OrderEventType, order: Order, lambdaRequestId: string) {
+  const data: OrderEventData = {
+    email: order.pk,
+    orderId: order.sk!,
+    shipping: {
+      type: order.shipping.type,
+      currier: order.shipping.carrier,
+    },
+    billing: {
+      payment: order.billing.payment as PaymentType,
+      total: order.billing.totalPrice,
+    },
+    productCodes: order.products.map(product => product.code),
+    requestId: lambdaRequestId,
+  };
+  const event: OrderEvent = {
+    eventType,
+    data
+  }
+  return sns.publish({
+    TopicArn: orderNotificationTopicArn,
+    Message: JSON.stringify({event})
+  }).promise();
 }
 
 function mapperOrderToOrderResponse(order: Order): OrderResponse {
