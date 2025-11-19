@@ -5,10 +5,12 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
 interface OrdersAppStackProps extends cdk.StackProps {
   productsTable: dynamodb.Table;
+  eventsTable: dynamodb.Table;
 }
 
 export class OrdersAppStack extends cdk.Stack {
@@ -56,6 +58,16 @@ export class OrdersAppStack extends cdk.Stack {
       orderEventsLayerArn
     )
 
+    const orderEventsRepositoryLayerArn = ssm.StringParameter.valueForStringParameter(
+      this,
+      'OrderEventsRepositoryLayerVersionArn'
+    )
+    const orderEventsRepositoryLayer = lambda.LayerVersion.fromLayerVersionArn(
+      this,
+      'OrderEventsRepositoryLayerIdentifier',
+      orderEventsRepositoryLayerArn
+    )
+
     const productsLayerArn = ssm.StringParameter.valueForStringParameter(
       this,
       'ProductsLayerVersionArn'
@@ -94,5 +106,33 @@ export class OrdersAppStack extends cdk.Stack {
     props.productsTable.grantReadData(this.ordersHandler);
     orderTable.grantReadWriteData(this.ordersHandler);
     orderNotificationTopic.grantPublish(this.ordersHandler);
+
+    const orderEventsHandler = new lambdaNodeJs.NodejsFunction(this, 'OrderEventsHandlerIdentifier', {
+      functionName: 'OrderEventsHandler',
+      entry: 'lambda/orders/orderEventsHandler.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(2),
+      environment: {
+        EVENTS_TABLE_NAME: props.eventsTable.tableName,
+      },
+      layers: [orderEventsLayer, orderEventsRepositoryLayer],
+      tracing: lambda.Tracing.ACTIVE,
+      insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+    });
+    orderNotificationTopic.addSubscription(new subs.LambdaSubscription(orderEventsHandler));
+
+    const eventsTablePolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['dynamodb:PutItem'],
+      resources: [props.eventsTable.tableArn],
+      conditions: {
+        ['ForAnyValue:StringLike']: {
+          'dynamodb:LeadingKeys': ['#order_*'],
+        }
+      }
+    });
+    orderEventsHandler.addToRolePolicy(eventsTablePolicy);
   }
 }

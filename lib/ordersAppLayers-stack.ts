@@ -41,5 +41,17 @@ export class OrdersAppLayersStack extends cdk.Stack {
       parameterName: 'OrderEventsLayerVersionArn',
       stringValue: orderEventsLayer.layerVersionArn
     });
+
+    const orderEventsRepositoryLayer = new lambda.LayerVersion(this, 'OrderEventsRepositoryLayerIdentifier', {
+      layerVersionName: 'OrderEventsRepositoryLayer',
+      code: lambda.Code.fromAsset('lambda/orders/layers/orderEventsRepositoryLayer'),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    new ssm.StringParameter(this, 'OrderEventsRepositoryLayerVersionArnParameter', {
+      parameterName: 'OrderEventsRepositoryLayerVersionArn',
+      stringValue: orderEventsRepositoryLayer.layerVersionArn
+    });
   }
 }

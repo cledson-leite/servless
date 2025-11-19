@@ -64,12 +64,14 @@ const ordersAppStack = new OrdersAppStack(
   'OrdersAppStackIndentifier',
   {
     productsTable: productsAppStack.productsTable,
+    eventsTable: eventsDynamoDBStack.table,
     env,
     tags,
   }
 );
 ordersAppStack.addDependency(productsAppStack);
 ordersAppStack.addDependency(ordersAppLayersStack);
+ordersAppStack.addDependency(eventsDynamoDBStack);
 
 const servlessApiStack = new ServlessApiStack(
   app,
