@@ -5,6 +5,8 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
@@ -135,7 +137,6 @@ export class OrdersAppStack extends cdk.Stack {
     });
     orderEventsHandler.addToRolePolicy(eventsTablePolicy);
 
-
     const paymentHandler = new lambdaNodeJs.NodejsFunction(this, 'PaymentHandlerIdentifier', {
       functionName: 'PaymentHandler',
       entry: 'lambda/orders/paymentHandler.ts',
@@ -157,5 +158,40 @@ export class OrdersAppStack extends cdk.Stack {
         }),
       },
     }));
+
+    const orderEventsQueue = new sqs.Queue(this, 'OrderEventsQueueIdentifier', {
+      queueName: 'OrderEventsQueue',
+      enforceSSL: false,
+      encryption: sqs.QueueEncryption.UNENCRYPTED,
+    });
+    orderNotificationTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue, {
+      filterPolicy: {
+        eventType: sns.SubscriptionFilter.stringFilter({
+          allowlist: ['ORDER_CREATED'],
+        }),
+      },
+    }));
+
+    const orderEmailHandler = new lambdaNodeJs.NodejsFunction(this, 'OrderEmailHandlerIdentifier', {
+      functionName: 'OrderEmailHandler',
+      entry: 'lambda/orders/orderEmailHandler.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(2),
+      bundling: {
+        minify: true,
+        sourceMap: false,
+      },
+      layers: [orderEventsLayer],
+      tracing: lambda.Tracing.ACTIVE,
+      insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+    })
+    orderEmailHandler.addEventSource(new lambdaEventSources.SqsEventSource(orderEventsQueue, {
+      batchSize: 10, //quantidade de mensagens acumulada para envio
+      enabled: true, //habilitar ou desabilitar a fonte de eventos
+      maxBatchingWindow: cdk.Duration.seconds(300), //tempo maximo para aguardar o tamanho do lote ser atingido
+    }));
+    orderEventsQueue.grantConsumeMessages(orderEmailHandler);
   }
 }
