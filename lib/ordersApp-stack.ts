@@ -134,5 +134,28 @@ export class OrdersAppStack extends cdk.Stack {
       }
     });
     orderEventsHandler.addToRolePolicy(eventsTablePolicy);
+
+
+    const paymentHandler = new lambdaNodeJs.NodejsFunction(this, 'PaymentHandlerIdentifier', {
+      functionName: 'PaymentHandler',
+      entry: 'lambda/orders/paymentHandler.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(2),
+      bundling: {
+        minify: true,
+        sourceMap: false,
+      },
+      tracing: lambda.Tracing.ACTIVE,
+      insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+    })
+    orderNotificationTopic.addSubscription(new subs.LambdaSubscription(paymentHandler, {
+      filterPolicy: {
+        eventType: sns.SubscriptionFilter.stringFilter({
+          allowlist: ['ORDER_CREATED'],
+        }),
+      },
+    }));
   }
 }

@@ -154,7 +154,13 @@ function publishOrderEvent(eventType: OrderEventType, order: Order, lambdaReques
   }
   return sns.publish({
     TopicArn: orderNotificationTopicArn,
-    Message: JSON.stringify({...event})
+    Message: JSON.stringify({...event}),
+    MessageAttributes: {
+      eventType: {
+        DataType: 'String',
+        StringValue: eventType,
+      },
+    },
   }).promise();
 }
 
