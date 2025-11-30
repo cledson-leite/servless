@@ -17,5 +17,25 @@ export class EventsDynamoDBStack extends cdk.Stack {
       readCapacity: 1,
       writeCapacity: 1,
     });
+
+    const readScaleUp = this.table.autoScaleReadCapacity({
+      minCapacity: 1,
+      maxCapacity: 2,
+    });
+    readScaleUp.scaleOnUtilization({
+      targetUtilizationPercent: 50, //ideal 75%
+      scaleInCooldown: cdk.Duration.seconds(60),
+      scaleOutCooldown: cdk.Duration.seconds(60),
+    });
+
+    const writeScaleUp = this.table.autoScaleWriteCapacity({
+      minCapacity: 1,
+      maxCapacity: 4,
+    });
+    writeScaleUp.scaleOnUtilization({
+      targetUtilizationPercent: 50, //ideal 75%
+      scaleInCooldown: cdk.Duration.seconds(60),
+      scaleOutCooldown: cdk.Duration.seconds(60),
+    });
 }
 }
