@@ -18,6 +18,6 @@ export interface OrderEventData {
     payment: string;
     total: number;
   },
-  productCodes: string[];
+  productCodes?: string[];
   requestId: string;
 }

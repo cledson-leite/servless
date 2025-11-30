@@ -145,7 +145,7 @@ function publishOrderEvent(eventType: OrderEventType, order: Order, lambdaReques
       payment: order.billing.payment as PaymentType,
       total: order.billing.totalPrice,
     },
-    productCodes: order.products.map(product => product.code),
+    productCodes: order.products?.map(product => product.code),
     requestId: lambdaRequestId,
   };
   const event: OrderEvent = {
@@ -165,7 +165,7 @@ function publishOrderEvent(eventType: OrderEventType, order: Order, lambdaReques
 }
 
 function mapperOrderToOrderResponse(order: Order): OrderResponse {
-  const products: OrderProductResponse[] = order.products.map(product => ({
+  const products = order.products?.map(product => ({
     code: product.code,
     price: product.price
   }));
