@@ -29,4 +29,32 @@ export class OrderEventRepository {
       Item: orderEvent
     }).promise();
   }
+
+  async getOrderEventsByEmail(email: string): Promise<OrderEvent[]> {
+    const result = await this.db.query({
+      TableName: this.eventTable,
+      IndexName: 'emailIndex',
+      KeyConditionExpression: 'email = :email and begins_with(eventType, :prefix)',
+      ExpressionAttributeValues: {
+        ':email': email,
+        ':prefix': 'ORDER_'
+      }
+    }).promise();
+
+    return result.Items as OrderEvent[];
+  }
+
+  async getOrderEventsByEmailAndEventType(email: string, eventType: string): Promise<OrderEvent[]> {
+    const result = await this.db.query({
+      TableName: this.eventTable,
+      IndexName: 'emailIndex',
+      KeyConditionExpression: 'email = :email and eventType = :eventType',
+      ExpressionAttributeValues: {
+        ':email': email,
+        ':eventType': eventType
+      }
+    }).promise();
+
+    return result.Items as OrderEvent[];
+  }
 }

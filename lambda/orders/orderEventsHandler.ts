@@ -32,7 +32,7 @@ function createEvent(body: SNSMessage){
     eventType: event.eventType,
     info: {
       orderId: data.orderId,
-      productCodes: data.productCodes,
+      productCodes: data.productCodes!,
       messageId: body.MessageId!,
     }
   };

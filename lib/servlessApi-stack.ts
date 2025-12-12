@@ -8,6 +8,7 @@ interface ServlessApiStackProps extends cdk.StackProps {
   productsFetchHandler: lambdaNodeJs.NodejsFunction;
   productsAdminHandler: lambdaNodeJs.NodejsFunction;
   ordersHandler: lambdaNodeJs.NodejsFunction;
+  orderEventsFetchHandler: lambdaNodeJs.NodejsFunction;
 }
 
 export class ServlessApiStack extends cdk.Stack {
@@ -111,6 +112,23 @@ export class ServlessApiStack extends cdk.Stack {
     //GET /orders?email={email}&orderId={orderId}
     ordersResource.addMethod('GET', orderIntegration);
 
+    const orderEventsResource = ordersResource.addResource('events');
+    const orderEvetsFatchValidador = new apigateway.RequestValidator(this, 'OrderEventsFetchValidatorIdentifier', {
+      restApi: api,
+      requestValidatorName: 'OrderEventsFetchValidator',
+      validateRequestParameters: true,
+    });
+
+    const orderEventsIntegration = new apigateway.LambdaIntegration(props.orderEventsFetchHandler);
+
+    orderEventsResource.addMethod('GET', orderEventsIntegration, {
+      requestParameters: {
+        'method.request.querystring.email': true,
+        'method.request.querystring.eventType': false,
+      },
+      requestValidator: orderEvetsFatchValidador,
+    });
+    
     const orderDeletionValidator = new apigateway.RequestValidator(this, 'OrderDeletionValidatorIdentifier', {
       restApi: api,
       requestValidatorName: 'OrderDeletionValidator',

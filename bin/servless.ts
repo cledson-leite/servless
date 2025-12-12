@@ -82,6 +82,7 @@ const servlessApiStack = new ServlessApiStack(
     productsFetchHandler: productsAppStack.productsFetchHandler,
     productsAdminHandler: productsAppStack.productsAdminHandler,
     ordersHandler: ordersAppStack.ordersHandler,
+    orderEventsFetchHandler: ordersAppStack.orderEventsFetchHandler,
   }
 );
 servlessApiStack.addDependency(productsAppStack);

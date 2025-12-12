@@ -17,6 +17,7 @@ interface OrdersAppStackProps extends cdk.StackProps {
 
 export class OrdersAppStack extends cdk.Stack {
   readonly ordersHandler: lambdaNodeJs.NodejsFunction;
+  readonly orderEventsFetchHandler: lambdaNodeJs.NodejsFunction;
   constructor(scope: Construct, id: string, props: OrdersAppStackProps) {
     super(scope, id, props);
 
@@ -184,9 +185,38 @@ export class OrdersAppStack extends cdk.Stack {
       },
     }));
 
-    const orderEmailHandler = new lambdaNodeJs.NodejsFunction(this, 'OrderEmailHandlerIdentifier', {
-      functionName: 'OrderEmailHandler',
-      entry: 'lambda/orders/orderEmailHandler.ts',
+    // const orderEmailHandler = new lambdaNodeJs.NodejsFunction(this, 'OrderEmailHandlerIdentifier', {
+    //   functionName: 'OrderEmailHandler',
+    //   entry: 'lambda/orders/orderEmailHandler.ts',
+    //   handler: 'handler',
+    //   runtime: lambda.Runtime.NODEJS_20_X,
+    //   memorySize: 512,
+    //   timeout: cdk.Duration.seconds(2),
+    //   bundling: {
+    //     minify: true,
+    //     sourceMap: false,
+    //   },
+    //   layers: [orderEventsLayer],
+    //   tracing: lambda.Tracing.ACTIVE,
+    //   insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
+    // })
+    // orderEmailHandler.addEventSource(new lambdaEventSources.SqsEventSource(orderEventsQueue, {
+    //   batchSize: 10, //quantidade de mensagens acumulada para envio
+    //   enabled: true, //habilitar ou desabilitar a fonte de eventos
+    //   maxBatchingWindow: cdk.Duration.seconds(300), //tempo maximo para aguardar o tamanho do lote ser atingido
+    // }));
+    // orderEventsQueue.grantConsumeMessages(orderEmailHandler);
+
+    // const orderEmailPolicy = new iam.PolicyStatement({
+    //   effect: iam.Effect.ALLOW,
+    //   actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+    //   resources: ['*'],
+    // });
+    // orderEmailHandler.addToRolePolicy(orderEmailPolicy);
+
+    this.orderEventsFetchHandler = new lambdaNodeJs.NodejsFunction(this, 'OrderEventsFetchHandlerIdentifier', {
+      functionName: 'OrderEventsFetchHandler',
+      entry: 'lambda/orders/orderEventsFetchHandler.ts',
       handler: 'handler',
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 512,
@@ -195,22 +225,18 @@ export class OrdersAppStack extends cdk.Stack {
         minify: true,
         sourceMap: false,
       },
-      layers: [orderEventsLayer],
+      environment: {
+        EVENTS_TABLE_NAME: props.eventsTable.tableName,
+      },
+      layers: [orderEventsRepositoryLayer],
       tracing: lambda.Tracing.ACTIVE,
       insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
-    })
-    orderEmailHandler.addEventSource(new lambdaEventSources.SqsEventSource(orderEventsQueue, {
-      batchSize: 10, //quantidade de mensagens acumulada para envio
-      enabled: true, //habilitar ou desabilitar a fonte de eventos
-      maxBatchingWindow: cdk.Duration.seconds(300), //tempo maximo para aguardar o tamanho do lote ser atingido
-    }));
-    orderEventsQueue.grantConsumeMessages(orderEmailHandler);
-
-    const orderEmailPolicy = new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-      resources: ['*'],
     });
-    orderEmailHandler.addToRolePolicy(orderEmailPolicy);
+    const eventsFetchDynamoDBPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['dynamodb:Query'],
+      resources: [props.eventsTable.tableArn, `${props.eventsTable.tableArn}/index/emailIndex`],
+    });
+    this.orderEventsFetchHandler.addToRolePolicy(eventsFetchDynamoDBPolicy);
   }
 }
