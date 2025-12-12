@@ -205,5 +205,12 @@ export class OrdersAppStack extends cdk.Stack {
       maxBatchingWindow: cdk.Duration.seconds(300), //tempo maximo para aguardar o tamanho do lote ser atingido
     }));
     orderEventsQueue.grantConsumeMessages(orderEmailHandler);
+
+    const orderEmailPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+      resources: ['*'],
+    });
+    orderEmailHandler.addToRolePolicy(orderEmailPolicy);
   }
 }

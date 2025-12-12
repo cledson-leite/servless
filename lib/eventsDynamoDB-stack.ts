@@ -13,7 +13,7 @@ export class EventsDynamoDBStack extends cdk.Stack {
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       timeToLiveAttribute: 'ttl',
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
-      billingMode: dynamodb.BillingMode.PROVISIONED,
+      billingMode: dynamodb.BillingMode.PROVISIONED, //começar com on-demand e depois mudar para provisioned
       readCapacity: 1,
       writeCapacity: 1,
     });

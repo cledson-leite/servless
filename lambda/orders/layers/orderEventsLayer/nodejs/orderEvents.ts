@@ -2,10 +2,6 @@ export enum OrderEventType {
   ORDER_CREATED = 'ORDER_CREATED',
   ORDER_DELETED = 'ORDER_DELETED',
 }
-export interface OrderEvent {
-  eventType: OrderEventType;
-  data: OrderEventData
-}
 
 export interface OrderEventData {
   email: string;
@@ -20,4 +16,9 @@ export interface OrderEventData {
   },
   productCodes?: string[];
   requestId: string;
+}
+
+export interface OrderEvent {
+  eventType: OrderEventType;
+  data: OrderEventData
 }
